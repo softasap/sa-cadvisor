@@ -38,7 +38,14 @@
 
   - name: CAdvisor | Template startup script
     template: src="{{role_dir}}/templates/cadvisor.systemd.j2" dest="/etc/systemd/system/cadvisor.service"
-    when: cadvisor_exists | failed
+    when: cadvisor_exists | failed and ansible_service_mgr == "systemd"
+    become: yes
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | Template startup script
+    template: src="{{role_dir}}/templates/cadvisor.upstart.j2" dest="/etc/init/cadvisor"
+    when: cadvisor_exists | failed and ansible_service_mgr == "upstart"
     become: yes
     tags:
       - cadvisor
