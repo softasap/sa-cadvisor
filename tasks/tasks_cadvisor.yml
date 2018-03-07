@@ -38,7 +38,7 @@
 
   - name: CAdvisor | Template startup script
     template: src="{{role_dir}}/templates/cadvisor.systemd.j2" dest="/etc/systemd/system/cadvisor.service"
-    when: ansible_service_mgr == "systemd"
+    when: ansible_service_mgr == "systemd" and cadvisor_exists | failed
     become: yes
     tags:
       - cadvisor
@@ -52,22 +52,23 @@
 
     - name: CAdvisor | Template startup script
       template: src="{{role_dir}}/templates/cadvisor.amzn.j2" dest="/etc/init/cadvisor.conf"
-      when: ansible_service_mgr == "upstart" and startstop_exists | failed 
+      when: startstop_exists | failed 
       become: yes
       tags:
         - cadvisor
 
     - name: CAdvisor | Template startup script
       template: src="{{role_dir}}/templates/cadvisor.upstart.j2" dest="/etc/init/cadvisor.conf"
-      when: ansible_service_mgr == "upstart" and not startstop_exists | failed 
+      when: startstop_exists | failed 
       become: yes
       tags:
         - cadvisor
 
-    when: ansible_service_mgr == "upstart"
+    when: ansible_service_mgr == "upstart" and cadvisor_exists | failed
 
   - name: CAdvisor | Ensure service started
     service: name="cadvisor" state="started" enabled="yes"
+    when: cadvisor_exists | failed and docker_test is not defined
     become: yes
     tags:
       - cadvisor
