@@ -1,0 +1,51 @@
+---
+
+  - name: CAdvisor | Check installed
+    shell: test -x {{cadvisor_install_dir}}/cadvisor
+    register: cadvisor_exists
+    ignore_errors: true
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | create install dir
+    file: path="{{ cadvisor_install_dir }}" state="directory"
+    when: cadvisor_exists | failed
+    become: yes
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | download
+    get_url:
+      url: https://github.com/google/cadvisor/releases/download/v{{cadvisor_version}}/cadvisor
+      dest: "/opt/cadvisor/cadvisor-{{cadvisor_version}}"
+      mode: u=rwx,g=rx,o=rx
+      force: no
+    when: cadvisor_exists | failed
+    become: yes
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | Symlink current version
+    file:
+      src: "/opt/cadvisor/cadvisor-{{cadvisor_version}}"
+      path: /opt/cadvisor/cadvisor
+      force: yes
+      state: link
+    when: cadvisor_exists | failed
+    become: yes
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | Template startup script
+    template: src="{{role_dir}}/templates/cadvisor.systemd.j2" dest="/etc/systemd/system/cadvisor.service"
+    when: cadvisor_exists | failed
+    become: yes
+    tags:
+      - cadvisor
+
+  - name: CAdvisor | Ensure service started
+    service: name="cadvisor" state="started" enabled="yes"
+    when: docker_test is not defined and cadvisor_exists | failed
+    become: yes
+    tags:
+      - cadvisor

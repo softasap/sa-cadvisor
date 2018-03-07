@@ -1,0 +1,9 @@
+[Unit]
+Description=Google CAdvisor
+
+[Service]
+#User=root
+ExecStart={{cadvisor_install_dir}}/cadvisor --port {{ cadvisor_port | default(9280) }}
+
+[Install]
+WantedBy=multi-user.target
