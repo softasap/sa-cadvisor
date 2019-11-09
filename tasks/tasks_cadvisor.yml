@@ -1,74 +1,79 @@
 ---
 
   - name: CAdvisor | Check installed
-    shell: test -x {{cadvisor_install_dir}}/cadvisor
+    shell: test -x {{ cadvisor_install_dir }}/cadvisor
     register: cadvisor_exists
+    changed_when: False
     ignore_errors: true
     tags:
       - cadvisor
+      - skip_ansible_lint
 
   - name: CAdvisor | create install dir
     file: path="{{ cadvisor_install_dir }}" state="directory"
-    when: cadvisor_exists | failed
+    when: cadvisor_exists is failed
     become: yes
     tags:
       - cadvisor
 
   - name: CAdvisor | download
     get_url:
-      url: https://github.com/google/cadvisor/releases/download/v{{cadvisor_version}}/cadvisor
-      dest: "/opt/cadvisor/cadvisor-{{cadvisor_version}}"
+      url: https://github.com/google/cadvisor/releases/download/v{ {cadvisor_version }}/cadvisor
+      dest: "/opt/cadvisor/cadvisor-{{ cadvisor_version }}"
       mode: u=rwx,g=rx,o=rx
       force: no
-    when: cadvisor_exists | failed
+    when: cadvisor_exists is failed
     become: yes
     tags:
       - cadvisor
 
   - name: CAdvisor | Symlink current version
     file:
-      src: "/opt/cadvisor/cadvisor-{{cadvisor_version}}"
+      src: "/opt/cadvisor/cadvisor-{{ cadvisor_version }}"
       path: /opt/cadvisor/cadvisor
       force: yes
       state: link
-    when: cadvisor_exists | failed
+    when: cadvisor_exists is failed
     become: yes
     tags:
       - cadvisor
 
   - name: CAdvisor | Template startup script
-    template: src="{{role_dir}}/templates/cadvisor.systemd.j2" dest="/etc/systemd/system/cadvisor.service"
-    when: ansible_service_mgr == "systemd" and cadvisor_exists | failed
+    template: src="{{ role_dir }}/templates/cadvisor.systemd.j2" dest="/etc/systemd/system/cadvisor.service"
+    when: ansible_service_mgr == "systemd" and cadvisor_exists is failed
     become: yes
     tags:
       - cadvisor
 
   - block:
-    
+
     - name: Detect start-stop-daemon
       shell: type start-stop-daemon
       register: startstop_exists
+      changed_when: False
       ignore_errors: true
+      tags:
+        - skip_ansible_lint
 
     - name: CAdvisor | Template startup script
-      template: src="{{role_dir}}/templates/cadvisor.amzn.j2" dest="/etc/init/cadvisor.conf"
-      when: startstop_exists | failed 
+      template: src="{{ role_dir }}/templates/cadvisor.amzn.j2" dest="/etc/init/cadvisor.conf"
+      when: startstop_exists is failed
       become: yes
       tags:
         - cadvisor
 
     - name: CAdvisor | Template startup script
-      template: src="{{role_dir}}/templates/cadvisor.upstart.j2" dest="/etc/init/cadvisor.conf"
-      when: startstop_exists | failed 
+      template: src="{{ role_dir }}/templates/cadvisor.upstart.j2" dest="/etc/init/cadvisor.conf"
+      when: startstop_exists is failed
       become: yes
       tags:
         - cadvisor
 
-    when: ansible_service_mgr == "upstart" and cadvisor_exists | failed
+    when: ansible_service_mgr == "upstart" and cadvisor_exists is failed
 
   - name: CAdvisor | Ensure service started
     service: name="cadvisor" state="started" enabled="yes"
-    when: cadvisor_exists | failed and docker_test is not defined
+    when: cadvisor_exists is failed and docker_test is not defined
     become: yes
     tags:
       - cadvisor
