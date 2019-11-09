@@ -18,7 +18,7 @@
 
   - name: CAdvisor | download
     get_url:
-      url: https://github.com/google/cadvisor/releases/download/v{ {cadvisor_version }}/cadvisor
+      url: https://github.com/google/cadvisor/releases/download/v{{ cadvisor_version }}/cadvisor
       dest: "/opt/cadvisor/cadvisor-{{ cadvisor_version }}"
       mode: u=rwx,g=rx,o=rx
       force: no
